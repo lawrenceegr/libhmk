@@ -41,3 +41,20 @@ for keymap in default_keymaps:
             raise ValueError(
                 f"Expected default keymaps to have {kb_json.keyboard.num_keys} keys"
             )
+
+# Validate RGB configuration
+if kb_json.rgb is not None:
+    rgb = kb_json.rgb
+    if kb_json.hardware.driver != "at32f405xx":
+        raise ValueError(
+            f"RGB is not supported on driver {kb_json.hardware.driver} (only at32f405xx)"
+        )
+    if len(rgb.leds) != kb_json.keyboard.num_keys:
+        raise ValueError(f"Expected rgb.leds to have {kb_json.keyboard.num_keys} entries")
+    if len({d.i2c for d in rgb.drivers}) != len(rgb.drivers):
+        raise ValueError("Each RGB driver must be on its own I2C peripheral")
+    if any(d.i2c > 2 for d in rgb.drivers):
+        raise ValueError("RGB drivers must be on I2C1 or I2C2 (at32f405xx)")
+    for i, led in enumerate(rgb.leds):
+        if led is not None and led.driver >= len(rgb.drivers):
+            raise ValueError(f"rgb.leds[{i}].driver is out of range")

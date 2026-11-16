@@ -22,6 +22,7 @@
 #include "hid.h"
 #include "layout.h"
 #include "matrix.h"
+#include "rgb.h"
 #include "tusb.h"
 #include "wear_leveling.h"
 #include "xinput.h"
@@ -46,6 +47,7 @@ int main(void) {
   xinput_init();
   layout_init();
   command_init();
+  rgb_init();
 
   tud_init(BOARD_TUD_RHPORT);
 
@@ -57,6 +59,7 @@ int main(void) {
     matrix_scan();
     layout_task();
     xinput_task();
+    rgb_task();
   }
 
   return 0;

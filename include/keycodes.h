@@ -189,6 +189,19 @@ typedef enum {
   SP_MOUSE_BUTTON_4 = 0x9E,
   SP_MOUSE_BUTTON_5 = 0x9F,
 
+  // RGB keycodes (only act on keyboards with `rgb` in keyboard.json)
+  SP_RGB_TOGGLE = 0xA0,
+  SP_RGB_EFFECT_NEXT = 0xA1,
+  SP_RGB_EFFECT_PREV = 0xA2,
+  SP_RGB_HUE_UP = 0xA3,
+  SP_RGB_HUE_DOWN = 0xA4,
+  SP_RGB_SAT_UP = 0xA5,
+  SP_RGB_SAT_DOWN = 0xA6,
+  SP_RGB_BRIGHTNESS_UP = 0xA7,
+  SP_RGB_BRIGHTNESS_DOWN = 0xA8,
+  SP_RGB_SPEED_UP = 0xA9,
+  SP_RGB_SPEED_DOWN = 0xAA,
+
   // Layer keycodes
   SP_MO_MIN = 0xC0,
   SP_MO_MAX = 0xC7,
@@ -311,6 +324,17 @@ typedef enum {
   LY_LOCK = SP_LAYER_LOCK,
   PF_SWAP = SP_PROFILE_SWAP,
   PF_NEXT = SP_PROFILE_NEXT,
+  RGB_TOG = SP_RGB_TOGGLE,
+  RGB_MOD = SP_RGB_EFFECT_NEXT,
+  RGB_RMOD = SP_RGB_EFFECT_PREV,
+  RGB_HUI = SP_RGB_HUE_UP,
+  RGB_HUD = SP_RGB_HUE_DOWN,
+  RGB_SAI = SP_RGB_SAT_UP,
+  RGB_SAD = SP_RGB_SAT_DOWN,
+  RGB_VAI = SP_RGB_BRIGHTNESS_UP,
+  RGB_VAD = SP_RGB_BRIGHTNESS_DOWN,
+  RGB_SPI = SP_RGB_SPEED_UP,
+  RGB_SPD = SP_RGB_SPEED_DOWN,
 } keycode_t;
 
 // Map keycodes to their corresponding HID codes
@@ -346,3 +370,4 @@ extern const uint16_t keycode_to_hid[];
 #define HID_KEYCODE_RANGE KC_A... SP_MOUSE_BUTTON_5
 #define MOMENTARY_LAYER_RANGE SP_MO_MIN... SP_MO_MAX
 #define PROFILE_RANGE SP_PF_MIN... SP_PF_MAX
+#define RGB_KEYCODE_RANGE SP_RGB_TOGGLE... SP_RGB_SPEED_DOWN

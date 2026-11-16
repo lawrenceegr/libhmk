@@ -23,6 +23,7 @@
 #include "keycodes.h"
 #include "lib/bitmap.h"
 #include "matrix.h"
+#include "rgb.h"
 #include "xinput.h"
 
 // Layer mask. Each bit represents whether a layer is active or not.
@@ -300,6 +301,10 @@ void layout_register(uint8_t key, uint8_t keycode) {
 
   case SP_BOOT:
     board_enter_bootloader();
+    break;
+
+  case RGB_KEYCODE_RANGE:
+    rgb_process_keycode(keycode);
     break;
 
   default:

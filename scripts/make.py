@@ -152,5 +152,80 @@ if kb_json.actuation is not None:
     if actuation.actuation_point is not None:
         build_flags.define("ACTUATION_POINT", actuation.actuation_point)
 
+# RGB Configuration
+if kb_json.rgb is not None:
+    rgb = kb_json.rgb
+    build_flags.define("RGB_ENABLED")
+    build_flags.define(f"RGB_DRIVER_{rgb.driver.value.upper()}")
+    build_flags.define("RGB_NUM_DRIVERS", len(rgb.drivers))
+    build_flags.define("RGB_I2C_BUSES", utils.to_c_array([d.i2c for d in rgb.drivers]))
+    build_flags.define(
+        "RGB_I2C_SDA_PORTS", utils.to_c_array([f"GPIO{d.sda[0]}" for d in rgb.drivers])
+    )
+    build_flags.define(
+        "RGB_I2C_SDA_PINS", utils.to_c_array([int(d.sda[1:]) for d in rgb.drivers])
+    )
+    build_flags.define(
+        "RGB_I2C_SCL_PORTS", utils.to_c_array([f"GPIO{d.scl[0]}" for d in rgb.drivers])
+    )
+    build_flags.define(
+        "RGB_I2C_SCL_PINS", utils.to_c_array([int(d.scl[1:]) for d in rgb.drivers])
+    )
+    build_flags.define("RGB_I2C_MUX", utils.to_c_array([d.mux for d in rgb.drivers]))
+    build_flags.define(
+        "RGB_DRIVER_ADDRESSES", utils.to_c_array([d.address for d in rgb.drivers])
+    )
+    if rgb.sdb is not None:
+        build_flags.define("RGB_SDB_PORT", f"GPIO{rgb.sdb[0]}")
+        build_flags.define("RGB_SDB_PIN", int(rgb.sdb[1:]))
+    build_flags.define("RGB_GLOBAL_CURRENT", rgb.global_current)
+
+    # LED map: {driver, red, green, blue} PWM register indices per key.
+    # IS31FL3733 PWM register = (SW - 1) * 16 + (CS - 1). Driver 255 = no LED.
+    led_map = []
+    for led in rgb.leds:
+        if led is None:
+            led_map.append([255, 0, 0, 0])
+        else:
+            led_map.append(
+                [led.driver]
+                + [(sw - 1) * 16 + (led.cs - 1) for sw in (led.r, led.g, led.b)]
+            )
+    build_flags.define("RGB_LED_MAP", utils.to_c_array(led_map))
+
+    # Key centres from the layout, scaled so the widest row spans x = 0..255
+    centres = {}
+    y = 0.0
+    for row in kb_json.layout.keymap:
+        x = 0.0
+        for k in row:
+            x += k.x or 0
+            y += k.y or 0
+            w, h = k.w or 1, k.h or 1
+            centres[k.key] = (x + w / 2, y + h / 2)
+            x += w
+        y += 1
+    max_x = max(cx for cx, _ in centres.values()) or 1
+    led_pos = []
+    for i in range(kb.num_keys):
+        cx, cy = centres.get(i, (0, 0))
+        led_pos.append([round(cx / max_x * 255), min(255, round(cy / max_x * 255))])
+    build_flags.define("RGB_LED_POS", utils.to_c_array(led_pos))
+
+    d = rgb.defaults
+    build_flags.define(
+        "RGB_DEFAULT_SETTINGS",
+        utils.to_c_struct(
+            {
+                "enabled": "true" if d.enabled else "false",
+                "effect": d.effect,
+                "hue": d.hue,
+                "saturation": d.saturation,
+                "brightness": d.brightness,
+                "speed": d.speed,
+            }
+        ),
+    )
+
 # Add source build flags
 env.Append(BUILD_FLAGS=build_flags.get_flags())

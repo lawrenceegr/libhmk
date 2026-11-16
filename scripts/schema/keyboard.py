@@ -118,6 +118,57 @@ class KeyboardActuation(BaseModel):
     actuation_point: int = Field(ge=0, le=255)
 
 
+class KeyboardRGBDriverType(str, Enum):
+    IS31FL3733 = "is31fl3733"
+
+
+# One LED driver chip on its own I2C bus
+class KeyboardRGBDriver(BaseModel):
+    # I2C peripheral number (e.g. 1 for I2C1)
+    i2c: int = Field(ge=1, le=3)
+    # I2C pins, as GPIO pin names (e.g. "B7")
+    sda: str = Field(pattern=r"^[A-K][0-9]{1,2}$")
+    scl: str = Field(pattern=r"^[A-K][0-9]{1,2}$")
+    # Alternate function (IOMUX) number of the SDA/SCL pins for this I2C peripheral
+    mux: int = Field(ge=0, le=15, default=4)
+    # 7-bit I2C address (IS31FL3733 with ADDR1 = ADDR2 = GND: 0x50 = 80)
+    address: int = Field(ge=0, le=127, default=0x50)
+
+
+# One RGB LED: driver index, the CS pin of its common cathode and the SW pins of
+# its red/green/blue anodes, numbered as on the IS31FL3733 (CS1..CS16, SW1..SW12).
+class KeyboardRGBLed(BaseModel):
+    driver: NonNegativeInt
+    cs: int = Field(ge=1, le=16)
+    r: int = Field(ge=1, le=12)
+    g: int = Field(ge=1, le=12)
+    b: int = Field(ge=1, le=12)
+
+
+# Default RGB settings (until changed with keycodes)
+class KeyboardRGBDefaults(BaseModel):
+    enabled: bool = True
+    # Effect index, see `rgb_effect_t` in include/rgb.h
+    effect: int = Field(ge=0, le=255, default=0)
+    hue: int = Field(ge=0, le=255, default=0)
+    saturation: int = Field(ge=0, le=255, default=255)
+    brightness: int = Field(ge=0, le=255, default=128)
+    speed: int = Field(ge=0, le=255, default=128)
+
+
+# Per-key RGB lighting configuration
+class KeyboardRGB(BaseModel):
+    driver: KeyboardRGBDriverType
+    drivers: list[KeyboardRGBDriver] = Field(min_length=1, max_length=4)
+    # Shutdown pin shared by all drivers (driven high to enable them)
+    sdb: str | None = Field(default=None, pattern=r"^[A-K][0-9]{1,2}$")
+    # Global current control (GCC, 0-255). Peak LED current = 840 / R_ISET * GCC / 256 mA.
+    global_current: int = Field(ge=0, le=255, default=64)
+    # One entry per key index (length must equal num_keys); null for a key without an LED.
+    leds: list[KeyboardRGBLed | None]
+    defaults: KeyboardRGBDefaults = KeyboardRGBDefaults()
+
+
 # keyboard.json Schema
 class Keyboard(BaseModel):
     name: str
@@ -135,3 +186,4 @@ class Keyboard(BaseModel):
     # Default keymaps for each profile. If not specified, the default keymap will be used for all profiles.
     keymaps: list[list[list[str]]] | None = None
     actuation: KeyboardActuation | None = None
+    rgb: KeyboardRGB | None = None
