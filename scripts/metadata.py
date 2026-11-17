@@ -14,6 +14,7 @@
 import gzip
 import json
 import os
+import re
 import utils
 from schema.keyboard import KeyboardUSBPort
 from uuid import uuid4
@@ -48,6 +49,32 @@ def ms_os_20_guid_def():
     return utils.to_slice_def("MS_OS_20_GUID", guid_array)
 
 
+def rgb_keycode_values() -> dict[str, int]:
+    """RGB keycode names (`SP_RGB_*` and `RGB_*` aliases) to their values.
+
+    Upstream hmkconf rejects metadata with keycode names it doesn't know, but it
+    accepts plain numbers (shown as "Unknown Keycode"), so these are sent as
+    numbers. Read from keycodes.h so the values can't drift from the firmware.
+    """
+    with open(os.path.join("include", "keycodes.h")) as f:
+        src = f.read()
+    values = {
+        name: int(value, 16)
+        for name, value in re.findall(r"\b(SP_RGB_\w+)\s*=\s*(0x[0-9A-Fa-f]+)", src)
+    }
+    for alias, name in re.findall(r"\b(RGB_\w+)\s*=\s*(SP_RGB_\w+)", src):
+        values[alias] = values[name]
+    return values
+
+
+def metadata_keymaps() -> list[list[list[str | int]]]:
+    rgb = rgb_keycode_values()
+    return [
+        [[rgb.get(kc, kc) for kc in layer] for layer in profile]
+        for profile in utils.resolve_default_keymaps(kb_json)
+    ]
+
+
 def keyboard_metadata_def():
     metadata = {
         "name": kb_json.name,
@@ -62,7 +89,7 @@ def keyboard_metadata_def():
         "numDynamicKeystrokeMaxBindings": kb_json.keyboard.num_dynamic_keystroke_max_bindings,
         "numMacroNodes": kb_json.keyboard.num_macro_nodes,
         "layout": kb_json.layout.model_dump(exclude_none=True),
-        "defaultKeymaps": utils.resolve_default_keymaps(kb_json),
+        "defaultKeymaps": metadata_keymaps(),
     }
 
     uncompressed = json.dumps(metadata).encode("utf-8")
